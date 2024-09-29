@@ -23,7 +23,7 @@ WiFiManager wifiManager;
 
 OneWire oneWire(OW_PIN);
 DallasTemperature sensors(&oneWire);
-DeviceAddress tempSensorAddr;
+DeviceAddress sensorAddresses[MAX_SENSOR_COUNT];
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
@@ -126,13 +126,16 @@ void setup() {
 
   sensors.begin();
   
-  if (!sensors.getAddress(tempSensorAddr, 0)) {
-    Serial.println("Unable to find address for device 0");
+  // TODO: split mqttTopicName and make number of sensors dynamic
+  for (int i = 0; i < sensorCount; i++) {
+    if (sensors.getAddress(sensorAddresses[i], i)) {
+      sensors.setResolution(sensorAddresses[i], 10);
+    } else {
+      Serial.printf("Unable to find address for device %d", i);
+    }
   }
 
   mqttClient.setServer(MQTT_HOST, 1883);
-
-  sensors.setResolution(tempSensorAddr, 9);
 }
 
 void loop() {
@@ -149,11 +152,13 @@ void loop() {
   if (now - lastMsgMillis > 10000){    
     lastMsgMillis = now;
     sensors.requestTemperatures();
-    float tempC = sensors.getTempC(tempSensorAddr);
+    for (int i = 0; i < sensorCount; i++) {
+      float tempC = sensors.getTempC(sensorAddresses[i]);
     if (!mqttClient.connected()) {
       reconnectMQTT();
     }
-    mqttClient.publish(String(mqttTopicName + "/temperature").c_str(), String(tempC).c_str(), false);
+      mqttClient.publish((String("sensor/") + mqttTopicNames[i] + "/temperature").c_str(), String(tempC).c_str(), false);
+    }
   }
   mqttClient.loop();
 }
@@ -163,7 +168,7 @@ void reconnectMQTT() {
     Serial.println("Attempting MQTT connection.....");
     if (mqttClient.connect("ESP8266Client", MQTT_USER, MQTT_PASSWORD)) {
       Serial.println("connected");
-    } else{
+    } else {
       Serial.printf("Failed, rc=%d", mqttClient.state());
       Serial.println();
       delay(5000);
