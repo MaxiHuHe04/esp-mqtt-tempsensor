@@ -11,7 +11,10 @@
 #define MQTT_HOST ""
 #define MQTT_PORT 1883
 #define MQTT_USER "esptemp"
-#define MQTT_PASSWORD ""
+
+#define MQTT_RETAIN true
+
+#define INTERVAL 10000
 
 #define OW_PIN D6
 
@@ -149,7 +152,7 @@ void loop() {
   ArduinoOTA.handle();
 
   long now = millis();
-  if (now - lastMsgMillis > 10000){    
+  if (now - lastMsgMillis > INTERVAL) {    
     lastMsgMillis = now;
     sensors.requestTemperatures();
     for (int i = 0; i < sensorCount; i++) {
@@ -157,14 +160,16 @@ void loop() {
     if (!mqttClient.connected()) {
       reconnectMQTT();
     }
-      mqttClient.publish((String("sensor/") + mqttTopicNames[i] + "/temperature").c_str(), String(tempC).c_str(), false);
+      mqttClient.publish((String("sensor/") + mqttTopicNames[i] + "/temperature").c_str(),
+                         String(tempC).c_str(),
+                         MQTT_RETAIN);
     }
   }
   mqttClient.loop();
 }
 
 void reconnectMQTT() {
-  while (!mqttClient.connected()){
+  while (!mqttClient.connected()) {
     Serial.println("Attempting MQTT connection.....");
     if (mqttClient.connect("ESP8266Client", MQTT_USER, MQTT_PASSWORD)) {
       Serial.println("connected");
