@@ -11,7 +11,7 @@
 const char eepromCheckData[] = "TMPSENS";
 const int eepromCheckLength = strlen(eepromCheckData);
 
-WiFiManagerParameter mqttTopicNameParam("topicname", "MQTT topic names (sensor/<name>/temperature, comma separated)",
+WiFiManagerParameter mqttTopicNameParam("topicname", "MQTT topic names (sensor/&lt;name&gt;/temperature, comma separated)",
   EEPROM_TOPIC_DEFAULT, EEPROM_TOPIC_MAX_LENGTH);
 
 WiFiManagerParameter* wifiManagerParams[] = {&mqttTopicNameParam};
@@ -81,8 +81,11 @@ void beginEEPROM() {
 }
 
 void splitTopicNames() {
+  char tokenString[EEPROM_TOPIC_MAX_LENGTH];
+  strncpy(tokenString, mqttTopicNameString, EEPROM_TOPIC_MAX_LENGTH);
+
   char* rest = nullptr;
-  char* token = strtok_r(mqttTopicNameString, ",", &rest);
+  char* token = strtok_r(tokenString, ",", &rest);
   int i = 0;
 
   while (token != nullptr) {
