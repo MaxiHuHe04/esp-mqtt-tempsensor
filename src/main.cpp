@@ -14,7 +14,7 @@
 
 #define MQTT_RETAIN true
 
-#define INTERVAL 10000
+#define INTERVAL 60000
 
 #define OW_PIN D6
 
